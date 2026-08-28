@@ -4,11 +4,13 @@ plugins {
 
 group = "com.holparb"
 version = "0.0.1-SNAPSHOT"
-description = "chirp-backend"
 
 dependencies {
     implementation(projects.chat)
     implementation(projects.user)
     implementation(projects.notification)
     implementation(projects.common)
+
+    implementation(libs.spring.boot.starter.data.jpa)
+    runtimeOnly(libs.postgresql)
 }
