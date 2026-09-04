@@ -1,5 +1,6 @@
 package com.holparb.chirpbackend.service.auth
 
+import com.holparb.chirpbackend.domain.exception.EmailNotVerifiedException
 import com.holparb.chirpbackend.domain.exception.InvalidCredentialsException
 import com.holparb.chirpbackend.domain.exception.InvalidTokenException
 import com.holparb.chirpbackend.domain.exception.UserAlreadyExistsException
@@ -25,22 +26,29 @@ class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtService: JwtService,
-    private val refreshTokenRepository: RefreshTokenRepository
+    private val refreshTokenRepository: RefreshTokenRepository,
+    private val emailVerificationService: EmailVerificationService
 ) {
+    @Transactional
     fun registerUser(email: String, username: String, password: String): User {
+        val trimmedEmail = email.trim()
         val user = userRepository.findByEmailAndUsername(
-            email = email.trim(),
+            email = trimmedEmail,
             username = username.trim()
         )
         if (user != null) throw UserAlreadyExistsException()
 
-        return userRepository.save(
+        val savedUser = userRepository.saveAndFlush(
             UserEntity(
-                email = email.trim(),
+                email = trimmedEmail,
                 username = username.trim(),
                 hashedPassword = passwordEncoder.encode(rawPassword = password)
             )
-        ).toUser()
+        )
+
+        val emailVerificationToken = emailVerificationService.createVerificationToken(email = trimmedEmail)
+
+        return savedUser.toUser()
     }
 
     fun logIn(
@@ -53,7 +61,7 @@ class AuthService(
             throw InvalidCredentialsException()
         }
 
-        // TODO: check for verified email
+        if(!user.emailVerified) throw EmailNotVerifiedException()
 
         return user.id?.let { userId ->
             val accessToken = jwtService.generateAccessToken(userId = userId)

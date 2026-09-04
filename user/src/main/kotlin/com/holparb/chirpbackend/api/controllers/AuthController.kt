@@ -8,16 +8,20 @@ import com.holparb.chirpbackend.api.dto.UserDto
 import com.holparb.chirpbackend.api.mappers.toAuthenticatedUserDto
 import com.holparb.chirpbackend.api.mappers.toUserDto
 import com.holparb.chirpbackend.service.auth.AuthService
+import com.holparb.chirpbackend.service.auth.EmailVerificationService
 import jakarta.validation.Valid
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v1/auth")
 class AuthController(
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val emailVerificationService: EmailVerificationService
 ) {
 
     @PostMapping("/register")
@@ -49,4 +53,9 @@ class AuthController(
     fun logOut(
         @RequestBody body: RefreshRequest
     ) = authService.logOut(refreshToken = body.refreshToken)
+
+    @GetMapping("/verify")
+    fun verifyEmail(
+        @RequestParam emailVerificationToken: String
+    ) = emailVerificationService.verifyEmail(emailVerificationToken = emailVerificationToken)
 }

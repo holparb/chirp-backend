@@ -1,5 +1,6 @@
 package com.holparb.chirpbackend.api.exceptionhandling
 
+import com.holparb.chirpbackend.domain.exception.EmailNotVerifiedException
 import com.holparb.chirpbackend.domain.exception.InvalidCredentialsException
 import com.holparb.chirpbackend.domain.exception.InvalidTokenException
 import com.holparb.chirpbackend.domain.exception.UserAlreadyExistsException
@@ -29,6 +30,15 @@ class AuthExceptionHandler {
         e: UserNotFoundException
     ) = mapOf(
         "code" to "USER_NOT_FOUND",
+        "message" to e.message
+    )
+
+    @ExceptionHandler(EmailNotVerifiedException::class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    fun onEmailNotVerified(
+        e: EmailNotVerifiedException
+    ) = mapOf(
+        "code" to "EMAIL_NOT_VERIFIED",
         "message" to e.message
     )
 
