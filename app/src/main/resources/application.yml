@@ -3,8 +3,8 @@ spring:
     name: chirp-backend
 
   datasource:
-    url: jdbc:postgresql://db.hikddacgxrsigthorcvc.supabase.co:5432/postgres
-    username: postgres
+    url: jdbc:postgresql://aws-0-eu-central-1.pooler.supabase.com:5432/postgres
+    username: postgres.hikddacgxrsigthorcvc
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
@@ -38,3 +38,5 @@ chirp-backend:
   email:
     verification:
       expiry-hours: 24
+    reset-password:
+      expiry-minutes: 15
