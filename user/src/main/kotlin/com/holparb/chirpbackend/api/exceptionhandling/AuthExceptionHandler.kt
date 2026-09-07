@@ -3,6 +3,7 @@ package com.holparb.chirpbackend.api.exceptionhandling
 import com.holparb.chirpbackend.domain.exception.EmailNotVerifiedException
 import com.holparb.chirpbackend.domain.exception.InvalidCredentialsException
 import com.holparb.chirpbackend.domain.exception.InvalidTokenException
+import com.holparb.chirpbackend.domain.exception.RateLimitException
 import com.holparb.chirpbackend.domain.exception.SamePasswordException
 import com.holparb.chirpbackend.domain.exception.UserAlreadyExistsException
 import com.holparb.chirpbackend.domain.exception.UserNotFoundException
@@ -67,6 +68,15 @@ class AuthExceptionHandler {
         e: SamePasswordException
     ) = mapOf(
         "code" to "SAME_PASSWORD",
+        "message" to e.message
+    )
+
+    @ExceptionHandler(RateLimitException::class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    fun onRateLimitExceeded(
+        e: RateLimitException
+    ) = mapOf(
+        "code" to "RATE_LIMIT_EXCEEDED",
         "message" to e.message
     )
 
