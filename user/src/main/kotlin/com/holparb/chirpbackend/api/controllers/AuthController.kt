@@ -11,6 +11,7 @@ import com.holparb.chirpbackend.api.dto.ResetPasswordRequest
 import com.holparb.chirpbackend.api.dto.UserDto
 import com.holparb.chirpbackend.api.mappers.toAuthenticatedUserDto
 import com.holparb.chirpbackend.api.mappers.toUserDto
+import com.holparb.chirpbackend.api.util.requestUserId
 import com.holparb.chirpbackend.infra.ratelimiting.EmailRateLimiter
 import com.holparb.chirpbackend.service.auth.AuthService
 import com.holparb.chirpbackend.service.auth.EmailVerificationService
@@ -96,26 +97,29 @@ class AuthController(
     @PostMapping("/reset-password")
     fun resetPassword(
         @Valid @RequestBody body: ResetPasswordRequest
-    ) = passwordResetService.resetPassword(
-        passwordResetToken = body.token,
-        newPassword = body.newPassword
-    )
+    ) =
+        passwordResetService.resetPassword(
+            passwordResetToken = body.token,
+            newPassword = body.newPassword
+        )
 
     @PostMapping("/change-password")
     fun changePassword(
         @Valid @RequestBody body: ChangePasswordRequest
-    ) {
-        // TODO: extract userId and call service
-    }
+    ) =
+        passwordResetService.changePassword(
+            userId = requestUserId,
+            oldPassword = body.newPassword,
+            newPassword = body.newPassword
+        )
 
     @PostMapping("/resend-verification")
     fun resendVerification(
         @Valid @RequestBody body: EmailRequest
-    ) {
+    ) =
         emailRateLimiter.withRateLimit(
             email = body.email
         ) {
             emailVerificationService.resendVerificationEmail(email = body.email)
         }
-    }
 }
