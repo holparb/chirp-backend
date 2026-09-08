@@ -5,3 +5,11 @@ spring:
 
 jwt:
   expiration-minutes: 10000
+
+nginx:
+  require-proxy: false
+
+chirp-backend:
+  rate-limit:
+    ip:
+      apply-limit: true

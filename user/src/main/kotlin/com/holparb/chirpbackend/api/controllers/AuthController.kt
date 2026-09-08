@@ -1,5 +1,6 @@
 package com.holparb.chirpbackend.api.controllers
 
+import com.holparb.chirpbackend.api.config.IpRateLimit
 import com.holparb.chirpbackend.api.dto.AuthenticatedUserDto
 import com.holparb.chirpbackend.api.dto.ChangePasswordRequest
 import com.holparb.chirpbackend.api.dto.EmailRequest
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.util.concurrent.TimeUnit
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -32,6 +34,11 @@ class AuthController(
 ) {
 
     @PostMapping("/register")
+    @IpRateLimit(
+        requests = 10,
+        duration = 1L,
+        unit = TimeUnit.HOURS
+    )
     fun register(
         @Valid @RequestBody body: RegistrationRequest
     ): UserDto =
@@ -42,6 +49,11 @@ class AuthController(
         ).toUserDto()
 
     @PostMapping("/login")
+    @IpRateLimit(
+        requests = 10,
+        duration = 1L,
+        unit = TimeUnit.HOURS
+    )
     fun logIn(
         @RequestBody body: LoginRequest
     ): AuthenticatedUserDto =
@@ -51,6 +63,11 @@ class AuthController(
         ).toAuthenticatedUserDto()
 
     @PostMapping("/refresh")
+    @IpRateLimit(
+        requests = 10,
+        duration = 1L,
+        unit = TimeUnit.HOURS
+    )
     fun refresh(
         @RequestBody body: RefreshRequest
     ): AuthenticatedUserDto =
@@ -67,6 +84,11 @@ class AuthController(
     ) = emailVerificationService.verifyEmail(emailVerificationToken = emailVerificationToken)
 
     @PostMapping("/forgot-password")
+    @IpRateLimit(
+        requests = 10,
+        duration = 1L,
+        unit = TimeUnit.HOURS
+    )
     fun forgotPassword(
         @RequestBody body: EmailRequest
     ) = passwordResetService.requestPasswordReset(email = body.email)
