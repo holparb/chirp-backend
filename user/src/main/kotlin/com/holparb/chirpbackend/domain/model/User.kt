@@ -1,8 +1,6 @@
 package com.holparb.chirpbackend.domain.model
 
-import java.util.UUID
-
-typealias UserId = UUID
+import com.holparb.chirpbackend.domain.type.UserId
 
 data class User(
     val id: UserId,

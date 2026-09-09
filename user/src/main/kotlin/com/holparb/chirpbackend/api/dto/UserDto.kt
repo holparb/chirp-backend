@@ -1,6 +1,6 @@
 package com.holparb.chirpbackend.api.dto
 
-import com.holparb.chirpbackend.domain.model.UserId
+import com.holparb.chirpbackend.domain.type.UserId
 
 data class UserDto(
     val id: UserId,

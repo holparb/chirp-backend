@@ -1,7 +1,7 @@
 package com.holparb.chirpbackend.api.util
 
 import com.holparb.chirpbackend.domain.exception.UnauthorizedException
-import com.holparb.chirpbackend.domain.model.UserId
+import com.holparb.chirpbackend.domain.type.UserId
 import org.springframework.security.core.context.SecurityContextHolder
 
 val requestUserId: UserId

@@ -4,7 +4,7 @@ import com.holparb.chirpbackend.domain.exception.InvalidCredentialsException
 import com.holparb.chirpbackend.domain.exception.InvalidTokenException
 import com.holparb.chirpbackend.domain.exception.SamePasswordException
 import com.holparb.chirpbackend.domain.exception.UserNotFoundException
-import com.holparb.chirpbackend.domain.model.UserId
+import com.holparb.chirpbackend.domain.type.UserId
 import com.holparb.chirpbackend.infra.database.entities.PasswordResetTokenEntity
 import com.holparb.chirpbackend.infra.database.repositores.PasswordResetTokenRepository
 import com.holparb.chirpbackend.infra.database.repositores.RefreshTokenRepository

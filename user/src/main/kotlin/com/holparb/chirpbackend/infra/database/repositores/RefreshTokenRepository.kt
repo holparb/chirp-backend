@@ -1,6 +1,6 @@
 package com.holparb.chirpbackend.infra.database.repositores
 
-import com.holparb.chirpbackend.domain.model.UserId
+import com.holparb.chirpbackend.domain.type.UserId
 import com.holparb.chirpbackend.infra.database.entities.RefreshTokenEntity
 import org.springframework.data.jpa.repository.JpaRepository
 

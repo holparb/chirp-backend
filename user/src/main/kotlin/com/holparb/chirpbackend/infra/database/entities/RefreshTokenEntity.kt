@@ -1,6 +1,6 @@
 package com.holparb.chirpbackend.infra.database.entities
 
-import com.holparb.chirpbackend.domain.model.UserId
+import com.holparb.chirpbackend.domain.type.UserId
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

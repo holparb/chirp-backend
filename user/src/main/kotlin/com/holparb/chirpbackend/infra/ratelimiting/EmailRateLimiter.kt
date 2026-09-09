@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component
 @Component
 class EmailRateLimiter(
     private val redisTemplate: StringRedisTemplate,
+    @param:Value("\${chirp-backend.rate-limit.email.apply-limit}") private val applyLimit: Boolean,
 ) {
 
     @Value("classpath:email_rate_limit.lua")
@@ -27,17 +28,20 @@ class EmailRateLimiter(
         email: String,
         action: () -> Unit,
     ) {
-        val normalizedEmail = email.lowercase().trim()
 
-        val rateLimitKey = "$EMAIL_RATE_LIMIT_PREFIX:$normalizedEmail"
-        val attemptCountKey = "$EMAIL_ATTEMPT_COUNT_PREFIX:$normalizedEmail"
+        if(applyLimit) {
+            val normalizedEmail = email.lowercase().trim()
 
-        val result = redisTemplate.execute(rateLimitScript, listOf(rateLimitKey, attemptCountKey))
-        val attemptCount = result[0]
-        val ttl = result[1]
+            val rateLimitKey = "$EMAIL_RATE_LIMIT_PREFIX:$normalizedEmail"
+            val attemptCountKey = "$EMAIL_ATTEMPT_COUNT_PREFIX:$normalizedEmail"
 
-        if(attemptCount == -1L) {
-            throw RateLimitException(resetsInSeconds = ttl)
+            val result = redisTemplate.execute(rateLimitScript, listOf(rateLimitKey, attemptCountKey))
+            val attemptCount = result[0]
+            val ttl = result[1]
+
+            if(attemptCount == -1L) {
+                throw RateLimitException(resetsInSeconds = ttl)
+            }
         }
 
         action()

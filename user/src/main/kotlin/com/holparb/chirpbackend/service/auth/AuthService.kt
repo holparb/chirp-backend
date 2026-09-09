@@ -1,5 +1,6 @@
 package com.holparb.chirpbackend.service.auth
 
+import com.holparb.chirpbackend.domain.events.user.UserEvent
 import com.holparb.chirpbackend.domain.exception.EmailNotVerifiedException
 import com.holparb.chirpbackend.domain.exception.InvalidCredentialsException
 import com.holparb.chirpbackend.domain.exception.InvalidTokenException
@@ -7,12 +8,13 @@ import com.holparb.chirpbackend.domain.exception.UserAlreadyExistsException
 import com.holparb.chirpbackend.domain.exception.UserNotFoundException
 import com.holparb.chirpbackend.domain.model.AuthenticatedUser
 import com.holparb.chirpbackend.domain.model.User
-import com.holparb.chirpbackend.domain.model.UserId
+import com.holparb.chirpbackend.domain.type.UserId
 import com.holparb.chirpbackend.infra.database.entities.RefreshTokenEntity
 import com.holparb.chirpbackend.infra.database.entities.UserEntity
 import com.holparb.chirpbackend.infra.database.mappers.toUser
 import com.holparb.chirpbackend.infra.database.repositores.RefreshTokenRepository
 import com.holparb.chirpbackend.infra.database.repositores.UserRepository
+import com.holparb.chirpbackend.infra.messagequeue.EventPublisher
 import com.holparb.chirpbackend.infra.security.PasswordEncoder
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -27,7 +29,8 @@ class AuthService(
     private val passwordEncoder: PasswordEncoder,
     private val jwtService: JwtService,
     private val refreshTokenRepository: RefreshTokenRepository,
-    private val emailVerificationService: EmailVerificationService
+    private val emailVerificationService: EmailVerificationService,
+    private val eventPublisher: EventPublisher
 ) {
     @Transactional
     fun registerUser(email: String, username: String, password: String): User {
@@ -44,11 +47,20 @@ class AuthService(
                 username = username.trim(),
                 hashedPassword = passwordEncoder.encode(rawPassword = password)
             )
-        )
+        ).toUser()
 
         val emailVerificationToken = emailVerificationService.createVerificationToken(email = trimmedEmail)
 
-        return savedUser.toUser()
+        eventPublisher.publish(
+            event = UserEvent.Created(
+                userId = savedUser.id,
+                email = savedUser.email,
+                username = savedUser.username,
+                verificationToken = emailVerificationToken.token,
+            )
+        )
+
+        return savedUser
     }
 
     fun logIn(

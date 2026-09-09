@@ -12,4 +12,6 @@ nginx:
 chirp-backend:
   rate-limit:
     ip:
-      apply-limit: true
+      apply-limit: false
+    email:
+      apply-limit: false

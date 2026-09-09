@@ -13,3 +13,5 @@ chirp-backend:
   rate-limit:
     ip:
       apply-limit: true
+    email:
+      apply-limit: true
