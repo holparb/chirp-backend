@@ -21,7 +21,8 @@ class EmailVerificationService(
     private val emailVerificationTokenRepository: EmailVerificationTokenRepository,
     private val userRepository: UserRepository,
     private val eventPublisher: EventPublisher,
-    @param:Value("\${chirp-backend.email.verification.expiry-hours}") private val expiryHours: Long
+    @param:Value("\${chirp-backend.email.verification.expiry-hours}")
+    private val expiryHours: Long
 ) {
 
     @Transactional
@@ -54,8 +55,8 @@ class EmailVerificationService(
     }
 
     @Transactional
-    fun verifyEmail(emailVerificationToken: String) {
-        val verificationToken = emailVerificationTokenRepository.findByToken(emailVerificationToken)
+    fun verifyEmail(token: String) {
+        val verificationToken = emailVerificationTokenRepository.findByToken(token)
             ?: throw InvalidTokenException("Email verification token is invalid")
 
         if(verificationToken.used) {

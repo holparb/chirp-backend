@@ -81,8 +81,8 @@ class AuthController(
 
     @GetMapping("/verify")
     fun verifyEmail(
-        @RequestParam emailVerificationToken: String
-    ) = emailVerificationService.verifyEmail(emailVerificationToken = emailVerificationToken)
+        @RequestParam token: String
+    ) = emailVerificationService.verifyEmail(token = token)
 
     @PostMapping("/forgot-password")
     @IpRateLimit(

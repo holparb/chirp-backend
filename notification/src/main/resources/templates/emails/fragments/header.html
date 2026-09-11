@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="header" style="background-color: #000000; padding: 30px 20px; text-align: center;">
+    <p style="color: #6c757d; margin: 0; font-size: 14px;">
+        Chirp Service<span th:text="${#dates.year(#dates.createNow())}">2026</span>
+    </p>
+</div>
+</body>
+</html>

@@ -10,7 +10,8 @@ import org.springframework.stereotype.Component
 @Component
 class EmailRateLimiter(
     private val redisTemplate: StringRedisTemplate,
-    @param:Value("\${chirp-backend.rate-limit.email.apply-limit}") private val applyLimit: Boolean,
+    @param:Value("\${chirp-backend.rate-limit.email.apply-limit}")
+    private val applyLimit: Boolean,
 ) {
 
     @Value("classpath:email_rate_limit.lua")

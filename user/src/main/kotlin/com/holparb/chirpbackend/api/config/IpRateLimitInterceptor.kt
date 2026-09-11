@@ -16,7 +16,8 @@ import java.time.Duration
 class IpRateLimitInterceptor(
     private val ipRateLmiter: IpRateLmiter,
     private val ipResolver: IpResolver,
-    @param:Value("\${chirp-backend.rate-limit.ip.apply-limit}") private val applyLimit: Boolean,
+    @param:Value("\${chirp-backend.rate-limit.ip.apply-limit}")
+    private val applyLimit: Boolean,
 ): HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         if(handler is HandlerMethod && applyLimit) {

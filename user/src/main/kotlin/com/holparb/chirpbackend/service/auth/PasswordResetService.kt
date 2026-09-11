@@ -1,5 +1,6 @@
 package com.holparb.chirpbackend.service.auth
 
+import com.holparb.chirpbackend.domain.events.user.UserEvent
 import com.holparb.chirpbackend.domain.exception.InvalidCredentialsException
 import com.holparb.chirpbackend.domain.exception.InvalidTokenException
 import com.holparb.chirpbackend.domain.exception.SamePasswordException
@@ -9,6 +10,7 @@ import com.holparb.chirpbackend.infra.database.entities.PasswordResetTokenEntity
 import com.holparb.chirpbackend.infra.database.repositores.PasswordResetTokenRepository
 import com.holparb.chirpbackend.infra.database.repositores.RefreshTokenRepository
 import com.holparb.chirpbackend.infra.database.repositores.UserRepository
+import com.holparb.chirpbackend.infra.messagequeue.EventPublisher
 import com.holparb.chirpbackend.infra.security.PasswordEncoder
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.repository.findByIdOrNull
@@ -24,7 +26,9 @@ class PasswordResetService(
     private val passwordResetTokenRepository: PasswordResetTokenRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
     private val passwordEncoder: PasswordEncoder,
-    @param:Value("\${chirp-backend.email.reset-password.expiry-minutes}") private val expiryMinutes: Long
+    private val eventPublisher: EventPublisher,
+    @param:Value("\${chirp-backend.email.reset-password.expiry-minutes}")
+    private val expiryMinutes: Long
 ) {
     @Transactional
     fun requestPasswordReset(email: String) {
@@ -38,7 +42,15 @@ class PasswordResetService(
         )
         passwordResetTokenRepository.save(passwordResetToken)
 
-        // TODO: Inform notification service to send email with password reset
+        eventPublisher.publish(
+            event = UserEvent.RequestResetPassword(
+                email = email,
+                userId = user.id!!,
+                username = user.username,
+                verificationToken = passwordResetToken.token,
+                expiresInMinutes = expiryMinutes
+            )
+        )
     }
 
     @Transactional
@@ -83,11 +95,11 @@ class PasswordResetService(
     ) {
         val user = userRepository.findByIdOrNull(userId) ?: throw UserNotFoundException()
 
-        if(!passwordEncoder.matches(rawPassword = oldPassword, hashedPassword = user.hashedPassword)) {
+        if (!passwordEncoder.matches(rawPassword = oldPassword, hashedPassword = user.hashedPassword)) {
             throw InvalidCredentialsException()
         }
 
-        if(oldPassword == newPassword) {
+        if (oldPassword == newPassword) {
             throw SamePasswordException()
         }
 
