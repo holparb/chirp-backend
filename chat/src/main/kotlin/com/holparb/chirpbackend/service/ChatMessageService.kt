@@ -17,6 +17,7 @@ import com.holparb.chirpbackend.infra.database.repositories.ChatParticipantRepos
 import com.holparb.chirpbackend.infra.database.repositories.ChatRepository
 import com.holparb.chirpbackend.infra.messagequeue.EventPublisher
 import jakarta.transaction.Transactional
+import org.springframework.cache.annotation.CacheEvict
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -31,6 +32,10 @@ class ChatMessageService(
 ) {
 
     @Transactional
+    @CacheEvict(
+        cacheNames = ["messages"],
+        key = "#chatId",
+    )
     fun sendMessage(
         chatId: ChatId,
         senderId: UserId,
@@ -88,5 +93,13 @@ class ChatMessageService(
                 chatId = message.chatId,
             )
         )
+    }
+
+    @CacheEvict(
+        cacheNames = ["messages"],
+        key = "#chatId",
+    )
+    fun evictMessagesCache(chatId: ChatId) {
+        // NO-OP: Let Spring handle the cache evict
     }
 }

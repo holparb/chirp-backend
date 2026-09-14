@@ -18,6 +18,7 @@ import com.holparb.chirpbackend.infra.database.mappers.toChatMessage
 import com.holparb.chirpbackend.infra.database.repositories.ChatMessageRepository
 import com.holparb.chirpbackend.infra.database.repositories.ChatParticipantRepository
 import com.holparb.chirpbackend.infra.database.repositories.ChatRepository
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
@@ -67,7 +68,7 @@ class ChatService(
         val requestingUserInChat = chat.participants.any {
             it.userId == requestUserId
         }
-        if(!requestingUserInChat) {
+        if (!requestingUserInChat) {
             throw ForbiddenException()
         }
 
@@ -100,7 +101,7 @@ class ChatService(
             ?: throw ChatParticipantNotFoundException(id = chatId)
 
         val newParticipantsSize = chat.participants.size - 1
-        if(newParticipantsSize == 0) {
+        if (newParticipantsSize == 0) {
             chatRepository.deleteById(chatId)
             return
         }
@@ -119,6 +120,12 @@ class ChatService(
         )
     }
 
+    @Cacheable(
+        value = ["messages"],
+        key = "#chatId",
+        condition = "#before == null && #pageSize <= 50",
+        sync = true
+    )
     fun getChatMessages(
         chatId: ChatId,
         before: Instant?,
@@ -137,4 +144,24 @@ class ChatService(
         chatMessageRepository.findLatestMessagesByChatIds(setOf(chatId))
             .firstOrNull()
             ?.toChatMessage()
+
+    fun getChatById(chatId: ChatId, userId: UserId): Chat? =
+        chatRepository.findChatById(
+            id = chatId,
+            userId = userId
+        )?.toChat(lastMessageForChat(chatId = chatId))
+
+    fun findChatsByUser(userId: UserId): List<Chat> {
+        val chatEntities = chatRepository.findAllByUserId(userId = userId)
+        val chatIds = chatEntities.mapNotNull { it.id }
+        val latestMessages = chatMessageRepository
+            .findLatestMessagesByChatIds(chatIds = chatIds.toSet())
+            .associateBy { it.chatId }
+
+        return chatEntities
+            .map { chatEntity ->
+                chatEntity.toChat(lastMessage = latestMessages[chatEntity.id]?.toChatMessage())
+            }
+            .sortedByDescending { it.lastActivityAt }
+    }
 }

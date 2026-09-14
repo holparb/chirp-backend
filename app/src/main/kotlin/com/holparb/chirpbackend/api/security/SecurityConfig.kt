@@ -1,4 +1,4 @@
-package com.holparb.chirpbackend.security
+package com.holparb.chirpbackend.api.security
 
 import com.holparb.chirpbackend.api.config.JwtAuthFilter
 import jakarta.servlet.DispatcherType
