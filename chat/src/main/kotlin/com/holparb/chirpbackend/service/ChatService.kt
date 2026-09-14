@@ -2,6 +2,8 @@ package com.holparb.chirpbackend.service
 
 import com.holparb.chirpbackend.api.dto.ChatMessageDto
 import com.holparb.chirpbackend.api.mappers.toChatMessageDto
+import com.holparb.chirpbackend.domain.event.ChatParticipantJoinedEvent
+import com.holparb.chirpbackend.domain.event.ChatParticipantLeftEvent
 import com.holparb.chirpbackend.domain.exception.ChatNotFoundException
 import com.holparb.chirpbackend.domain.exception.ChatParticipantNotFoundException
 import com.holparb.chirpbackend.domain.exception.ForbiddenException
@@ -16,6 +18,7 @@ import com.holparb.chirpbackend.infra.database.mappers.toChatMessage
 import com.holparb.chirpbackend.infra.database.repositories.ChatMessageRepository
 import com.holparb.chirpbackend.infra.database.repositories.ChatParticipantRepository
 import com.holparb.chirpbackend.infra.database.repositories.ChatRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -26,7 +29,8 @@ import java.time.Instant
 class ChatService(
     private val chatRepository: ChatRepository,
     private val chatParticipantRepository: ChatParticipantRepository,
-    private val chatMessageRepository: ChatMessageRepository
+    private val chatMessageRepository: ChatMessageRepository,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
 
     @Transactional
@@ -72,11 +76,20 @@ class ChatService(
                 ?: throw ChatParticipantNotFoundException(id = userId)
         }
 
-        return chatRepository.save(
+        val updatedChat = chatRepository.save(
             chat.apply {
                 this.participants = chat.participants + users
             }
         ).toChat(lastMessage = lastMessageForChat(chatId = chatId))
+
+        applicationEventPublisher.publishEvent(
+            ChatParticipantJoinedEvent(
+                chatId = chatId,
+                userIds = userIds
+            )
+        )
+
+        return updatedChat
     }
 
     fun removeParticipant(chatId: ChatId, userId: UserId) {
@@ -96,6 +109,13 @@ class ChatService(
             chat.apply {
                 this.participants = chat.participants - participant
             }
+        )
+
+        applicationEventPublisher.publishEvent(
+            ChatParticipantLeftEvent(
+                chatId = chatId,
+                userId = userId
+            )
         )
     }
 

@@ -1,5 +1,7 @@
 package com.holparb.chirpbackend.service
 
+import com.holparb.chirpbackend.domain.event.MessageDeletedEvent
+import com.holparb.chirpbackend.domain.events.chat.ChatEvent
 import com.holparb.chirpbackend.domain.exception.ChatMessageNotFoundException
 import com.holparb.chirpbackend.domain.exception.ChatNotFoundException
 import com.holparb.chirpbackend.domain.exception.ChatParticipantNotFoundException
@@ -13,7 +15,9 @@ import com.holparb.chirpbackend.infra.database.mappers.toChatMessage
 import com.holparb.chirpbackend.infra.database.repositories.ChatMessageRepository
 import com.holparb.chirpbackend.infra.database.repositories.ChatParticipantRepository
 import com.holparb.chirpbackend.infra.database.repositories.ChatRepository
+import com.holparb.chirpbackend.infra.messagequeue.EventPublisher
 import jakarta.transaction.Transactional
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
@@ -21,7 +25,9 @@ import org.springframework.stereotype.Service
 class ChatMessageService(
     private val chatMessageRepository: ChatMessageRepository,
     private val chatRepository: ChatRepository,
-    private val chatParticipantRepository: ChatParticipantRepository
+    private val chatParticipantRepository: ChatParticipantRepository,
+    private val applicationEventPublisher: ApplicationEventPublisher,
+    private val eventPublisher: EventPublisher
 ) {
 
     @Transactional
@@ -39,7 +45,7 @@ class ChatMessageService(
         val sender = chatParticipantRepository.findByIdOrNull(id = senderId)
             ?: throw ChatParticipantNotFoundException(id = senderId)
 
-        return chatMessageRepository.save(
+        val savedMessage = chatMessageRepository.saveAndFlush(
             ChatMessageEntity(
                 id = messageId,
                 content = content.trim(),
@@ -47,7 +53,19 @@ class ChatMessageService(
                 chat = chat,
                 sender = sender,
             )
-        ).toChatMessage()
+        )
+
+        eventPublisher.publish(
+            event = ChatEvent.NewMessage(
+                senderId = senderId,
+                chatId = chatId,
+                senderUsername = sender.username,
+                message = content,
+                recipientIds = chat.participants.map { it.userId }.toSet(),
+            )
+        )
+
+        return savedMessage.toChatMessage()
     }
 
     @Transactional
@@ -63,5 +81,12 @@ class ChatMessageService(
         }
 
         chatMessageRepository.delete(message)
+
+        applicationEventPublisher.publishEvent(
+            MessageDeletedEvent(
+                messageId = messageId,
+                chatId = message.chatId,
+            )
+        )
     }
 }
