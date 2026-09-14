@@ -1,5 +1,7 @@
 package com.holparb.chirpbackend.service
 
+import com.holparb.chirpbackend.api.dto.ChatMessageDto
+import com.holparb.chirpbackend.api.mappers.toChatMessageDto
 import com.holparb.chirpbackend.domain.exception.ChatNotFoundException
 import com.holparb.chirpbackend.domain.exception.ChatParticipantNotFoundException
 import com.holparb.chirpbackend.domain.exception.ForbiddenException
@@ -14,9 +16,11 @@ import com.holparb.chirpbackend.infra.database.mappers.toChatMessage
 import com.holparb.chirpbackend.infra.database.repositories.ChatMessageRepository
 import com.holparb.chirpbackend.infra.database.repositories.ChatParticipantRepository
 import com.holparb.chirpbackend.infra.database.repositories.ChatRepository
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 @Service
 class ChatService(
@@ -94,6 +98,20 @@ class ChatService(
             }
         )
     }
+
+    fun getChatMessages(
+        chatId: ChatId,
+        before: Instant?,
+        pageSize: Int,
+    ): List<ChatMessageDto> =
+        chatMessageRepository.findByChatIdBefore(
+            chatId = chatId,
+            before = before ?: Instant.now(),
+            pageable = PageRequest.of(0, pageSize)
+        )
+            .content
+            .asReversed()
+            .map { it.toChatMessage().toChatMessageDto() }
 
     private fun lastMessageForChat(chatId: ChatId): ChatMessage? =
         chatMessageRepository.findLatestMessagesByChatIds(setOf(chatId))

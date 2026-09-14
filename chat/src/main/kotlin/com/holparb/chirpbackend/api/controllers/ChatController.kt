@@ -2,24 +2,33 @@ package com.holparb.chirpbackend.api.controllers
 
 import com.holparb.chirpbackend.api.dto.AddParticipantToChatDto
 import com.holparb.chirpbackend.api.dto.ChatDto
+import com.holparb.chirpbackend.api.dto.ChatMessageDto
 import com.holparb.chirpbackend.api.dto.CreateChatRequest
 import com.holparb.chirpbackend.api.mappers.toChatDto
 import com.holparb.chirpbackend.api.util.requestUserId
 import com.holparb.chirpbackend.domain.type.ChatId
 import com.holparb.chirpbackend.service.ChatService
 import jakarta.validation.Valid
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
+import java.time.Instant
 
 @RestController
 @RequestMapping("/api/v1/chat")
 class ChatController(
     private val chatService: ChatService
 ) {
+
+    @GetMapping("/{chatId}/messages")
+    fun getMessagesForChat(
+        @PathVariable("chatId") chatId: ChatId,
+        @RequestParam("before", required = false) before: Instant? = null,
+        @RequestParam("pageSize", required = false) pageSize: Int = DEFAULT_PAGE_SIZE
+    ): List<ChatMessageDto> =
+        chatService.getChatMessages(
+            chatId = chatId,
+            before = before,
+            pageSize = pageSize
+        )
 
     @PostMapping
     fun createChat(
@@ -49,4 +58,8 @@ class ChatController(
             chatId = chatId,
             userId = requestUserId
         )
+
+    private companion object {
+        const val DEFAULT_PAGE_SIZE = 20
+    }
 }
