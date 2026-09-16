@@ -20,3 +20,5 @@ chirp-backend:
       apply-limit: true
     email:
       apply-limit: true
+  websocket-config:
+    allowed-origin: "https://chirp-chat.com"
