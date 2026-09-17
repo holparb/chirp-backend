@@ -91,5 +91,5 @@ nginx:
     - "10.0.0.5/32" # nginx server IP on separate machine
 
 supabase:
-  url: "aws-0-eu-central-1.pooler.supabase.com"
+  url: "https://hikddacgxrsigthorcvc.storage.supabase.co"
   service-key: ${SUPABASE_SERVICE_KEY}

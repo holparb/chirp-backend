@@ -2,11 +2,13 @@ package com.holparb.chirpbackend.service
 
 import com.holparb.chirpbackend.domain.event.ProfilePictureUpdatedEvent
 import com.holparb.chirpbackend.domain.exception.ChatParticipantNotFoundException
+import com.holparb.chirpbackend.domain.exception.InvalidProfilePictureException
 import com.holparb.chirpbackend.domain.model.ProfilePictureUploadCredentials
 import com.holparb.chirpbackend.domain.type.UserId
 import com.holparb.chirpbackend.infra.database.repositories.ChatParticipantRepository
 import com.holparb.chirpbackend.infra.storage.SupabaseStorageService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -16,7 +18,8 @@ import org.springframework.transaction.annotation.Transactional
 class ProfilePictureService(
     private val supabaseStorageService: SupabaseStorageService,
     private val chatParticipantRepository: ChatParticipantRepository,
-    private val applicationEventPublisher: ApplicationEventPublisher
+    private val applicationEventPublisher: ApplicationEventPublisher,
+    @param:Value("\${supabase.url}") private val supabaseUrl: String,
 ) {
 
     private val logger = LoggerFactory.getLogger(ProfilePictureService::class.java)
@@ -54,6 +57,11 @@ class ProfilePictureService(
 
     @Transactional
     fun confirmProfilePictureUpload(userId: UserId, publicUrl: String) {
+        if(!publicUrl.startsWith(supabaseUrl
+        )) {
+            throw InvalidProfilePictureException("Invalid profile picture url")
+        }
+
         val participant = chatParticipantRepository.findByIdOrNull(userId)
             ?: throw ChatParticipantNotFoundException(userId)
 
