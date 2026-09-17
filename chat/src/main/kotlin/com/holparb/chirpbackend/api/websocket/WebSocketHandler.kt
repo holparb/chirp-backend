@@ -5,6 +5,7 @@ import com.holparb.chirpbackend.api.mappers.toChatMessageDto
 import com.holparb.chirpbackend.domain.event.ChatParticipantJoinedEvent
 import com.holparb.chirpbackend.domain.event.ChatParticipantLeftEvent
 import com.holparb.chirpbackend.domain.event.MessageDeletedEvent
+import com.holparb.chirpbackend.domain.event.ProfilePictureUpdatedEvent
 import com.holparb.chirpbackend.domain.type.ChatId
 import com.holparb.chirpbackend.domain.type.UserId
 import com.holparb.chirpbackend.service.ChatMessageService
@@ -267,6 +268,46 @@ class WebSocketHandler(
                         logger.error("Failed to close session $sessionId", e)
                     }
                 }
+            }
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onProfilePictureUpdated(event: ProfilePictureUpdatedEvent) {
+        val userChats = connectionLock.read {
+            userChatIds[event.userId]?.toList() ?: emptyList()
+        }
+
+        val dto = ProfilePictureUpdateDto(
+            userId = event.userId,
+            newUrl = event.newUrl,
+        )
+
+        val sessionIds = mutableSetOf<String>()
+        userChats.forEach { chatId ->
+            connectionLock.read {
+                chatToSessions[chatId]?.let { sessions ->
+                    sessionIds.addAll(sessions)
+                }
+            }
+        }
+
+        val webSocketMessage = OutgoingWebSocketMessage(
+            type = OutgoingWebSocketMessageType.PROFILE_PICTURE_UPDATED,
+            payload = objectMapper.writeValueAsString(dto)
+        )
+        val messageJson = objectMapper.writeValueAsString(webSocketMessage)
+
+        sessionIds.forEach { sessionId ->
+            val userSession = connectionLock.read {
+                sessions[sessionId]
+            } ?: return@forEach
+            try {
+                if(userSession.session.isOpen) {
+                    userSession.session.sendMessage(TextMessage(messageJson))
+                }
+            } catch (e: Exception) {
+                logger.error("Could not sent profile picture update for session $sessionId", e)
             }
         }
     }
