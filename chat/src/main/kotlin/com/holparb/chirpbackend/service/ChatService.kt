@@ -2,6 +2,7 @@ package com.holparb.chirpbackend.service
 
 import com.holparb.chirpbackend.api.dto.ChatMessageDto
 import com.holparb.chirpbackend.api.mappers.toChatMessageDto
+import com.holparb.chirpbackend.domain.event.ChatCreatedEvent
 import com.holparb.chirpbackend.domain.event.ChatParticipantJoinedEvent
 import com.holparb.chirpbackend.domain.event.ChatParticipantLeftEvent
 import com.holparb.chirpbackend.domain.exception.ChatNotFoundException
@@ -49,12 +50,19 @@ class ChatService(
         val creator = chatParticipantRepository.findByIdOrNull(creatorId)
             ?: throw ChatParticipantNotFoundException(id = creatorId)
 
-        return chatRepository.save(
+        return chatRepository.saveAndFlush(
             ChatEntity(
                 creator = creator,
                 participants = setOf(creator) + otherParticipants
             )
-        ).toChat(lastMessage = null)
+        ).toChat(lastMessage = null).also { entity ->
+            applicationEventPublisher.publishEvent(
+                ChatCreatedEvent(
+                    chatId = entity.id,
+                    participantIds = entity.participants.map { it.userId }
+                )
+            )
+        }
     }
 
     fun addParticipants(

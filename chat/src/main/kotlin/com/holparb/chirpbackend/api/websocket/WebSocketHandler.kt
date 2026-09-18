@@ -2,6 +2,7 @@ package com.holparb.chirpbackend.api.websocket
 
 import com.holparb.chirpbackend.api.dto.ws.*
 import com.holparb.chirpbackend.api.mappers.toChatMessageDto
+import com.holparb.chirpbackend.domain.event.ChatCreatedEvent
 import com.holparb.chirpbackend.domain.event.ChatParticipantJoinedEvent
 import com.holparb.chirpbackend.domain.event.ChatParticipantLeftEvent
 import com.holparb.chirpbackend.domain.event.MessageDeletedEvent
@@ -169,27 +170,28 @@ class WebSocketHandler(
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    fun onJoinChat(event: ChatParticipantJoinedEvent) {
-        connectionLock.write {
-            event.userIds.forEach { userId ->
-                userChatIds.compute(userId) { _, chatIds ->
-                    (chatIds ?: mutableSetOf()).apply { add(event.chatId) }
-                }
+    fun onChatCreated(event: ChatCreatedEvent) {
+        updateChatForUsers(
+            chatId = event.chatId,
+            userIds = event.participantIds
+        )
+    }
 
-                userToSessions[userId]?.forEach { sessionId ->
-                    chatToSessions.compute(event.chatId) { _, sessions ->
-                        (sessions ?: mutableSetOf()).apply { add(sessionId) }
-                    }
-                }
-            }
-        }
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onJoinChat(event: ChatParticipantJoinedEvent) {
+        updateChatForUsers(
+            chatId = event.chatId,
+            userIds = event.userIds.toList()
+        )
 
         broadcastToChat(
             chatId = event.chatId,
             message = OutgoingWebSocketMessage(
                 type = OutgoingWebSocketMessageType.CHAT_PARTICIPANTS_CHANGED,
                 payload = objectMapper.writeValueAsString(
-                    ChatParticipantsChangedDto(chatId = event.chatId)
+                    ChatParticipantsChangedDto(
+                        chatId = event.chatId
+                    )
                 )
             )
         )
@@ -308,6 +310,27 @@ class WebSocketHandler(
                 }
             } catch (e: Exception) {
                 logger.error("Could not sent profile picture update for session $sessionId", e)
+            }
+        }
+    }
+
+    private fun updateChatForUsers(
+        chatId: ChatId,
+        userIds: List<UserId>
+    ) {
+        connectionLock.write {
+            userIds.forEach { userId ->
+                userChatIds.compute(userId) { _, chatIds ->
+                    (chatIds ?: mutableSetOf()).apply {
+                        add(chatId)
+                    }
+                }
+
+                userToSessions[userId]?.forEach { sessionId ->
+                    chatToSessions.compute(chatId) { _, sessions ->
+                        (sessions ?: mutableSetOf()).apply { add(sessionId) }
+                    }
+                }
             }
         }
     }
